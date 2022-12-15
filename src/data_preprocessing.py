@@ -18,3 +18,4 @@ if __name__ == "__main__":
         df = df.drop(indices_to_remove)
         # rows in df: train=30162, test=15060
         df.to_csv("../data_processed/" + df_name + ".csv")
+
