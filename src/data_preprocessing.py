@@ -17,5 +17,4 @@ if __name__ == "__main__":
         indices_to_remove = [i for i, c in product(df.index, df.columns) if str(df.at[i, c]).__contains__("?")]
         df = df.drop(indices_to_remove)
         # rows in df: train=30162, test=15060
-        df.to_csv("../data_processed/" + df_name + ".csv")
-
+        df.to_csv("../data_processed/" + df_name + ".csv",index=None)
