@@ -15,11 +15,13 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import make_column_transformer
+from sklearn.inspection import permutation_importance
 
 import pandas as pd
 import numpy as np
 import os
 from itertools import product
+import matplotlib.pyplot as plt
 
 # Load data
 train_data = pd.read_csv("../data_processed/data.csv")
@@ -54,11 +56,23 @@ test_input = test_input.drop("remainder__train", axis=1)
 
 # Train and evaluate
 rf = RandomForestClassifier()
-params = {"criterion": ["gini", "entropy"], "max_depth": [None, 3, 5, 8], "n_estimators": [10, 50, 100, 200, 500],
-          "class_weight": [dict(data["fnlwgt"]), None, "balanced"], "random_state": [0]}
+params = {"criterion": ["gini", "entropy"], "max_depth": [None, 5, 8, 10, 12, 15], "n_estimators": [10, 50, 100, 200, 500],
+          "class_weight": [dict(data["fnlwgt"]), None, "balanced"],"max_features": ["sqrt", None, 8], "random_state": [0]}
 
 clf = GridSearchCV(rf, params, n_jobs=-1, cv=5, scoring="accuracy")  # default is 5-fold CV
 clf.fit(train_input, train_labels)
 # print(clf.cv_results_)
-print(clf.score(test_input, test_labels))
+
 print(clf.best_params_)
+print(clf.score(test_input, test_labels))
+
+# Feature importance
+result = permutation_importance(clf, test_input, test_labels, n_repeats=10, random_state=0, n_jobs=1)
+forest_importances = pd.Series(result.importances_mean, index=train_input.columns)
+
+fig, ax = plt.subplots()
+forest_importances.plot.bar(yerr=result.importances_std, ax=ax)
+ax.set_title("Feature importances using permutation on full model")
+ax.set_ylabel("Mean accuracy decrease")
+fig.tight_layout()
+plt.show()
