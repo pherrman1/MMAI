@@ -56,8 +56,8 @@ test_input = test_input.drop("remainder__train", axis=1)
 
 # Train and evaluate
 rf = RandomForestClassifier()
-params = {"criterion": ["gini", "entropy"], "max_depth": [None, 5, 8, 10, 12, 15], "n_estimators": [10, 50, 100, 200, 500],
-          "class_weight": [dict(data["fnlwgt"]), None, "balanced"],"max_features": ["sqrt", None, 8], "random_state": [0]}
+params = {"criterion": ["gini", "entropy"], "max_depth": [None, 5, 8, 10, 15], "n_estimators": [50, 100, 200, 500],
+          "class_weight": [dict(data["fnlwgt"]), None, "balanced"],"max_features": ["sqrt", "log2", 20], "random_state": [0]}
 
 clf = GridSearchCV(rf, params, n_jobs=-1, cv=5, scoring="accuracy")  # default is 5-fold CV
 clf.fit(train_input, train_labels)
