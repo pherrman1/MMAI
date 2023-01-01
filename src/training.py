@@ -15,8 +15,10 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import make_column_transformer
-from sklearn.inspection import permutation_importance
 
+
+import pickle
+import datetime
 import pandas as pd
 import numpy as np
 import os
@@ -38,7 +40,7 @@ test_labels.replace([" <=50K.", " >50K."], [0, 1], inplace=True)
 train_data["train"] = 1
 test_data["train"] = 0
 data = pd.concat([train_data, test_data], ignore_index=True)
-data.drop("education",axis=1,inplace=True)
+data.drop("education", axis=1, inplace=True)
 input_data = data.loc[:, data.columns != 'class']
 categorical_columns = [input_data.columns[i] for i in range(len(input_data.columns)) if
                        input_data.dtypes[i] == "object"]
@@ -57,46 +59,23 @@ test_input = test_input.drop("remainder__train", axis=1)
 # Train and evaluate
 rf = RandomForestClassifier()
 params = {"criterion": ["gini", "entropy"], "max_depth": [None, 5, 8, 10, 15], "n_estimators": [50, 100, 200, 500],
-          "class_weight": [dict(data["fnlwgt"]), None, "balanced"],"max_features": ["sqrt", "log2", 20], "random_state": [0]}
+          "class_weight": [dict(data["fnlwgt"]), None, "balanced"], "max_features": ["sqrt", "log2", 20],
+          "random_state": [0]}
 
 clf = GridSearchCV(rf, params, n_jobs=-1, cv=5, scoring="accuracy")  # default is 5-fold CV
 clf.fit(train_input, train_labels)
-# print(clf.cv_results_)
 
-print(clf.best_params_)
+dir_name = "../models/" + datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + "_" + type(rf).__name__
+os.mkdir(dir_name)
+with open(dir_name + "/params.pickle", "wb") as file:
+    pickle.dump(params, file)
+with open(dir_name + "/best_params.pickle", "wb") as file:
+    pickle.dump(clf.best_params_, file)
+with open(dir_name + "/input_data.pickle", "wb") as file:
+    pickle.dump(input_data, file)
+with open(dir_name + "/model", "wb") as file:
+    pickle.dump(clf, file)
+
+#print(clf.best_params_)
 print(clf.score(test_input, test_labels))
-
-# Feature importance
-result = permutation_importance(clf, test_input, test_labels, n_repeats=10, random_state=0, n_jobs=1)
-forest_importances = pd.Series(result.importances_mean, index=train_input.columns)
-
-# use all onehotencoder features
-fig, ax = plt.subplots()
-forest_importances.plot.bar(yerr=result.importances_std, ax=ax)
-ax.set_title("Feature importances using permutation on full model")
-ax.set_ylabel("Mean accuracy decrease")
-fig.tight_layout()
-plt.show()
-
-# back to original features by summing their means
-features = ["age", "workclass", "education", "marital-status", "occupation", "relationship",
-           "race", "sex", "capital-gain", "capital-loss", "hours-per-week", "native-country"]
-
-for feature in features:
-    col_list = [i for i in train_input.columns if i.__contains__("_"+feature)]
-    forest_importances[feature] = forest_importances[col_list].sum(axis=0)
-    forest_importances = forest_importances.drop(col_list)
-    
-fig, ax = plt.subplots()
-forest_importances.plot.bar(ax=ax)
-ax.set_title("Feature importances using permutation on full model")
-ax.set_ylabel("Mean accuracy decrease")
-fig.tight_layout()
-plt.show()
-
-
-
-
-
-
 
