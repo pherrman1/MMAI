@@ -15,6 +15,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import make_column_transformer
+from sklearn.ensemble import GradientBoostingClassifier
 
 
 import pickle
@@ -57,15 +58,21 @@ train_input = train_input.drop("remainder__train", axis=1)
 test_input = test_input.drop("remainder__train", axis=1)
 
 # Train and evaluate
-rf = RandomForestClassifier()
-params = {"criterion": ["gini", "entropy"], "max_depth": [None, 5, 8, 10, 15], "n_estimators": [50, 100, 200, 500],
-          "class_weight": [dict(data["fnlwgt"]), None, "balanced"], "max_features": ["sqrt", "log2", 20],
-          "random_state": [0]}
+# RandomForest
+#clf = RandomForestClassifier()
+#params = {"criterion": ["gini", "entropy"], "max_depth": [None, 5, 8, 10, 15], "n_estimators": [50, 100, 200, 500],
+#          "class_weight": [dict(data["fnlwgt"]), None, "balanced"], "max_features": ["sqrt", "log2", 20],
+#          "random_state": [0]}
 
-clf = GridSearchCV(rf, params, n_jobs=-1, cv=5, scoring="accuracy")  # default is 5-fold CV
+#GradientBoost
+clf = GradientBoostingClassifier()
+params = {"loss": ["log_loss", "deviance", "exponential"], "learning_rate": [0.01, 0.1, 1], "n_estimators": [50, 100, 200, 500], 
+          "criterion": ["friedman_mse", "squared_error"], "max_features": [None, "sqrt", "log2", 20], "random_state": [0]}
+
+clf = GridSearchCV(clf, params, n_jobs=-1, cv=5, scoring="accuracy")  # default is 5-fold CV
 clf.fit(train_input, train_labels)
 
-dir_name = "../models/" + datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + "_" + type(rf).__name__
+dir_name = "../models/" + datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + "_" + type(clf).__name__
 os.mkdir(dir_name)
 with open(dir_name + "/params.pickle", "wb") as file:
     pickle.dump(params, file)
@@ -76,6 +83,6 @@ with open(dir_name + "/input_data.pickle", "wb") as file:
 with open(dir_name + "/model", "wb") as file:
     pickle.dump(clf, file)
 
-#print(clf.best_params_)
+print(clf.best_params_)
 print(clf.score(test_input, test_labels))
 
