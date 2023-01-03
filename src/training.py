@@ -70,7 +70,7 @@ test_input = test_input.drop("remainder__train", axis=1)
 
 # GradientBoost
 clf = GradientBoostingClassifier()
-params = {"loss": ["log_loss", "deviance", "exponential"], "learning_rate": [0.01, 0.1, 1],
+params = {"loss": ["log_loss", "exponential"], "learning_rate": [0.01, 0.1, 1],
           "n_estimators": [50, 100, 200, 500],
           "criterion": ["friedman_mse", "squared_error"], "max_features": [None, "sqrt", "log2", 20],
           "random_state": [0]}
