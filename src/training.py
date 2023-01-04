@@ -69,11 +69,16 @@ test_input = test_input.drop("remainder__train", axis=1)
 #          "random_state": [0]}
 
 # GradientBoost
-clf = GradientBoostingClassifier()
-params = {"loss": ["log_loss", "exponential"], "learning_rate": [0.01, 0.1, 1],
-          "n_estimators": [50, 100, 200, 500],
-          "criterion": ["friedman_mse", "squared_error"], "max_features": [None, "sqrt", "log2", 20],
-          "random_state": [0]}
+# clf = GradientBoostingClassifier()
+# params = {"loss": ["log_loss", "exponential"], "learning_rate": [0.01, 0.1, 1],
+#           "n_estimators": [50, 100, 200, 500],
+#           "criterion": ["friedman_mse", "squared_error"], "max_features": [None, "sqrt", "log2", 20],
+#           "random_state": [0]}
+
+#SVM
+clf = SVC()
+params = {"C": [0.5, 0.75, 1.0, 1.25, 1.5], "kernel": ["poly", "rbf", "sigmoid"], 
+          "class_weight": [dict(data["fnlwgt"]), None, "balanced"]}
 
 grid_clf = GridSearchCV(clf, params, n_jobs=-1, cv=5, scoring="accuracy")  # default is 5-fold CV
 grid_clf.fit(train_input, train_labels)
