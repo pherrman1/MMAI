@@ -3,11 +3,11 @@ Training classifiers
 """
 
 import sklearn as sl
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
+from sklearn.kernel_approximation import Nystroem
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
+from sklearn.svm import SVC, LinearSVC
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
@@ -56,6 +56,8 @@ test_input = input_data[input_data["remainder__train"] == 0]
 train_input = train_input.drop("remainder__train", axis=1)
 test_input = test_input.drop("remainder__train", axis=1)
 
+#classifier to train
+classifier = "SVM"
 # Train and evaluate
 # 1 Nearest Neighbour: 0.97 accuracy => Same input, different labels occur sometimes.
 # clf_base = KNeighborsClassifier(n_neighbors=1)
@@ -69,20 +71,34 @@ test_input = test_input.drop("remainder__train", axis=1)
 #          "random_state": [0]}
 
 # GradientBoost
-clf = GradientBoostingClassifier()
-params = {"loss": ["log_loss", "exponential"], "learning_rate": [0.01, 0.1, 1],
-          "n_estimators": [50, 100, 200, 500],
-          "criterion": ["friedman_mse", "squared_error"], "max_features": [None, "sqrt", "log2", 20],
-          "random_state": [0]}
+# clf = GradientBoostingClassifier()
+# params = {"loss": ["log_loss", "exponential"], "learning_rate": [0.01, 0.1, 1],
+          #"n_estimators": [50, 100, 200, 500],
+          #"criterion": ["friedman_mse", "squared_error"], "max_features": [None, "sqrt", "log2", 20],
+          #"random_state": [0]}
 
-# SVM
-# clf = SVC()
-# params = {"C": [0.5, 0.75, 1.0, 1.25, 1.5], "kernel": ["linear", "poly", "rbf", "sigmoid"], 
-#          "class_weight": [dict(data["fnlwgt"]), None, "balanced"]} #training took over 36hours
+if classifier =="SVM":
+    # SVM
+    clf = SVC(kernel="precomputed")
+    params = {"C": [1, 10, 100, 1000],
+              #"kernel": ["linear", "poly", "rbf", "sigmoid"],
+             "class_weight": [dict(data["fnlwgt"]), None, "balanced"]} #training took over 36hours
 
+    # Create the Nystroem transformer
+    transformer = Nystroem(kernel='rbf',n_components=10, random_state=42)
+
+    # Transform the training data using the Nystroem transformer
+    transformed_input = transformer.fit_transform(train_input, train_labels)
+    train_input = np.dot(transformed_input,transformed_input.T)
+    print(train_input.shape)
 
 grid_clf = GridSearchCV(clf, params, n_jobs=-1, cv=5, scoring="accuracy")  # default is 5-fold CV
 grid_clf.fit(train_input, train_labels)
+print("Fit done ")
+if classifier=="SVM":
+    # Transform the test data using the Nystroem transformer
+    test_input = transformer.transform(test_input)
+    test_input = np.dot(test_input, test_input.T)
 
 dir_name = "../models/" + datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + "_" + type(clf).__name__
 os.mkdir(dir_name)
