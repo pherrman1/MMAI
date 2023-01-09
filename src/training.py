@@ -2,7 +2,10 @@
 Training classifiers
 """
 
+from sklearn.decomposition import PCA, KernelPCA
 import sklearn as sl
+from sklearn.model_selection import learning_curve
+from sklearn.model_selection import LearningCurveDisplay
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 from sklearn.kernel_approximation import Nystroem
 from sklearn.neural_network import MLPClassifier
@@ -56,7 +59,7 @@ test_input = input_data[input_data["remainder__train"] == 0]
 train_input = train_input.drop("remainder__train", axis=1)
 test_input = test_input.drop("remainder__train", axis=1)
 
-#classifier to train
+# classifier to train
 classifier = "SVM"
 # Train and evaluate
 # 1 Nearest Neighbour: 0.97 accuracy => Same input, different labels occur sometimes.
@@ -73,32 +76,53 @@ classifier = "SVM"
 # GradientBoost
 # clf = GradientBoostingClassifier()
 # params = {"loss": ["log_loss", "exponential"], "learning_rate": [0.01, 0.1, 1],
-          #"n_estimators": [50, 100, 200, 500],
-          #"criterion": ["friedman_mse", "squared_error"], "max_features": [None, "sqrt", "log2", 20],
-          #"random_state": [0]}
+# "n_estimators": [50, 100, 200, 500],
+# "criterion": ["friedman_mse", "squared_error"], "max_features": [None, "sqrt", "log2", 20],
+# "random_state": [0]}
 
-if classifier =="SVM":
+if classifier == "SVM":
     # SVM
-    clf = SVC(kernel="precomputed")
-    params = {"C": [1, 10, 100, 1000],
-              #"kernel": ["linear", "poly", "rbf", "sigmoid"],
-             "class_weight": [dict(data["fnlwgt"]), None, "balanced"]} #training took over 36hours
+    #clf = SVC(kernel="linear")
+    clf = LinearSVC()
+    params = {"C": [0.01, 0.1, 1],
+              # "kernel": ["linear", "poly", "rbf", "sigmoid"],
+              # "class_weight": [dict(data["fnlwgt"])]
+              "penalty" : ["l2"],
+              "loss" :["hinge","squared_hinge"],
+              "random_state" : [0],
+              "dual" : [True, False],
+              "tol" : [1e-5, 1e-4, 1e-3],
+              "max_iter" : [100,1000,10000],
+              }  # training took over 36hours
 
     # Create the Nystroem transformer
-    transformer = Nystroem(kernel='rbf',n_components=10, random_state=42)
-
+    transformer = Nystroem(kernel='rbf', n_components=100, random_state=42, n_jobs=-1)
     # Transform the training data using the Nystroem transformer
-    transformed_input = transformer.fit_transform(train_input, train_labels)
-    train_input = np.dot(transformed_input,transformed_input.T)
+    #train_input = transformer.fit_transform(train_input, train_labels)
+    print(train_input.shape)
+    #print(train_input.shape)
+    # train_input = np.dot(transformed_input,transformed_input.T)
+    pca = PCA(n_components=10)
+    # train_input = pca.fit_transform(train_input)
+    #kernel_pca = KernelPCA(n_components=10, kernel="rbf", gamma=10, fit_inverse_transform=False,alpha=0.1, n_jobs=-1)
+    #train_input = kernel_pca.fit_transform(train_input)
     print(train_input.shape)
 
-grid_clf = GridSearchCV(clf, params, n_jobs=-1, cv=5, scoring="accuracy")  # default is 5-fold CV
+print("Start fitting")
+grid_clf = GridSearchCV(clf, params, n_jobs=-1, cv=5, scoring="accuracy", verbose=4)  # default is 5-fold CV
 grid_clf.fit(train_input, train_labels)
-print("Fit done ")
-if classifier=="SVM":
+# display = LearningCurveDisplay.from_estimator(SVC(kernel="linear"), train_input, train_labels,
+#                                              train_sizes=[50, 100, 200, 500, 1000],verbose=3, cv=5, n_jobs=-1, scoring="accuracy")
+# display.plot()
+# plt.show()
+print("Fit done")
+if classifier == "SVM":
     # Transform the test data using the Nystroem transformer
-    test_input = transformer.transform(test_input)
-    test_input = np.dot(test_input, test_input.T)
+    # test_input = transformer.transform(test_input)
+    # test_input = np.dot(test_input, test_input.T)
+    # test_input = pca.transform(test_input)
+    # test_input = kernel_pca.transform(test_input)
+    pass
 
 dir_name = "../models/" + datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + "_" + type(clf).__name__
 os.mkdir(dir_name)
