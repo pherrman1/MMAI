@@ -38,12 +38,17 @@ train_labels.replace([" <=50K", " >50K"], [0, 1], inplace=True)
 test_labels = test_data["class"]
 test_labels.replace([" <=50K.", " >50K."], [0, 1], inplace=True)
 
+full_data = False
+features_to_drop = ["capital-gain", "marital-status"]
+
 # OneHotEncoding for categorical input. Maybe not for "education", since we have "education-num"
 # Combine train and test for OneHotEncoding, label them for splitting later
 train_data["train"] = 1
 test_data["train"] = 0
 data = pd.concat([train_data, test_data], ignore_index=True)
 data.drop("education", axis=1, inplace=True)
+if not full_data:
+    data.drop(features_to_drop, axis=1, inplace=True)
 input_data = data.loc[:, data.columns != 'class']
 categorical_columns = [input_data.columns[i] for i in range(len(input_data.columns)) if
                        input_data.dtypes[i] == "object"]
@@ -60,7 +65,7 @@ train_input = train_input.drop("remainder__train", axis=1)
 test_input = test_input.drop("remainder__train", axis=1)
 
 # classifier to train
-classifier = "SVM"
+classifier = "GradientBoost"
 # Train and evaluate
 # 1 Nearest Neighbour: 0.97 accuracy => Same input, different labels occur sometimes.
 # clf_base = KNeighborsClassifier(n_neighbors=1)
@@ -74,11 +79,11 @@ classifier = "SVM"
 #          "random_state": [0]}
 
 # GradientBoost
-# clf = GradientBoostingClassifier()
-# params = {"loss": ["log_loss", "exponential"], "learning_rate": [0.01, 0.1, 1],
-# "n_estimators": [50, 100, 200, 500],
-# "criterion": ["friedman_mse", "squared_error"], "max_features": [None, "sqrt", "log2", 20],
-# "random_state": [0]}
+clf = GradientBoostingClassifier()
+params = {"loss": ["log_loss", "exponential"], "learning_rate": [0.01, 0.1, 1],
+"n_estimators": [50, 100, 200, 500],
+"criterion": ["friedman_mse", "squared_error"], "max_features": [None, "sqrt", "log2", 20],
+"random_state": [0]}
 
 if classifier == "SVM":
     # SVM
