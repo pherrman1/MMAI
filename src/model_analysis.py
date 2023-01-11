@@ -10,7 +10,7 @@ from scipy.interpolate import UnivariateSpline
 
 model_path = "../models/" + "2022_12_28_13_32_58_RandomForestClassifier"
 model_path = "../models/" + "2023_01_09_15_00_37_LinearSVC"
-model_path =  "../models/" + "2023_01_03_15_10_11_GradientBoostingClassifier"
+# model_path =  "../models/" + "2023_01_03_15_10_11_GradientBoostingClassifier"
 
 # load model and datasets
 with open(model_path + "/input_data.pickle", "rb") as file:
@@ -35,6 +35,7 @@ test_labels.replace([" <=50K.", " >50K."], [0, 1], inplace=True)
 
 pred_labels = clf.predict(test_input)
 print(precision_score(test_labels,pred_labels))
+print(clf.best_params_)
 
 # print(len(test_labels[test_labels == 1]) / len(test_labels))
 
@@ -61,6 +62,7 @@ def plot_feature_dependence_continuous(feature):
     plt.colorbar(mappable=m, ax=ax, location = "right", label = "frequency of values")
     ax.set_title(feature.split("_")[-1] + " " + model_path.split("_")[-1])
     plt.show()
+    plt.savefig(f"{features}_plot.png")
 
 #plot_feature_dependence_continuous("remainder__capital-gain")
 

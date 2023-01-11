@@ -19,6 +19,7 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import make_column_transformer
 from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.preprocessing import  StandardScaler
 
 import pickle
 import datetime
@@ -83,33 +84,36 @@ classifier = "SVM"
 if classifier == "SVM":
     # SVM
     #clf = SVC(kernel="linear")
+    # best_params for "2023_01_09_15_00_37_LinearSVC"
+    best_params = {'C': 0.1, 'dual': False, 'loss': 'squared_hinge', 'max_iter': 100, 'penalty': 'l2', 'random_state': 0, 'tol': 1e-05}
     clf = LinearSVC()
-    params = {"C": [0.01, 0.1, 1],
-              # "kernel": ["linear", "poly", "rbf", "sigmoid"],
-              # "class_weight": [dict(data["fnlwgt"])]
+    params = {"C": [0.01, 0.1, 1, 10],
+              "class_weight": [dict(data["fnlwgt"]),None,"balanced"],
               "penalty" : ["l2"],
               "loss" :["hinge","squared_hinge"],
               "random_state" : [0],
               "dual" : [True, False],
               "tol" : [1e-5, 1e-4, 1e-3],
               "max_iter" : [100,1000,10000],
-              }  # training took over 36hours
-
+              }
+    sc = StandardScaler()
+    train_input = sc.fit_transform(train_input)
     # Create the Nystroem transformer
+
     transformer = Nystroem(kernel='rbf', n_components=100, random_state=42, n_jobs=-1)
     # Transform the training data using the Nystroem transformer
     #train_input = transformer.fit_transform(train_input, train_labels)
     print(train_input.shape)
     #print(train_input.shape)
     # train_input = np.dot(transformed_input,transformed_input.T)
-    pca = PCA(n_components=10)
-    # train_input = pca.fit_transform(train_input)
+    pca = PCA(n_components=20)
+    #train_input = pca.fit_transform(train_input)
     #kernel_pca = KernelPCA(n_components=10, kernel="rbf", gamma=10, fit_inverse_transform=False,alpha=0.1, n_jobs=-1)
     #train_input = kernel_pca.fit_transform(train_input)
     print(train_input.shape)
 
 print("Start fitting")
-grid_clf = GridSearchCV(clf, params, n_jobs=-1, cv=5, scoring="accuracy", verbose=4)  # default is 5-fold CV
+grid_clf = GridSearchCV(clf, params, n_jobs=-1, cv=5, scoring="precision", verbose=4)  # default is 5-fold CV
 grid_clf.fit(train_input, train_labels)
 # display = LearningCurveDisplay.from_estimator(SVC(kernel="linear"), train_input, train_labels,
 #                                              train_sizes=[50, 100, 200, 500, 1000],verbose=3, cv=5, n_jobs=-1, scoring="accuracy")
@@ -120,9 +124,13 @@ if classifier == "SVM":
     # Transform the test data using the Nystroem transformer
     # test_input = transformer.transform(test_input)
     # test_input = np.dot(test_input, test_input.T)
-    # test_input = pca.transform(test_input)
     # test_input = kernel_pca.transform(test_input)
+    test_input = sc.transform(test_input)
+    #test_input = pca.transform(test_input)
     pass
+
+print(grid_clf.best_params_)
+print(grid_clf.score(test_input, test_labels))
 
 dir_name = "../models/" + datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + "_" + type(clf).__name__
 os.mkdir(dir_name)
@@ -135,5 +143,4 @@ with open(dir_name + "/input_data.pickle", "wb") as file:
 with open(dir_name + "/model", "wb") as file:
     pickle.dump(grid_clf, file)
 
-print(grid_clf.best_params_)
-print(grid_clf.score(test_input, test_labels))
+
