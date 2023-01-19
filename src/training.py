@@ -139,11 +139,11 @@ if classifier == "LGBM":
         test_input[feature] = pd.Series(data[feature], dtype="category")
 
     params = {
-              "n_estimators": [50, 100, 200, 500],
-              "max_depth": [-1, 5, 10],
-              "learning_rate": [0.01, 0.1, 0.2],
+              "n_estimators": [100, 200, 300],
+              "max_depth": [-1, 5, 8,10],
+              "learning_rate": [0.05, 0.1, 0.2],
               "random_state": [0],
-              "num_leaves":[50,100,200],
+              "num_leaves":[10,25,50,100,200],
               "n_jobs":[-1],
               "is_unbalance":[True,False]}
 
