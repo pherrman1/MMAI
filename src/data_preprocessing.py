@@ -7,7 +7,7 @@ from sklearn.compose import make_column_transformer
 
 
 
-def get_data(oneHotEncoding = True, full_data = True, features_to_drop = []):
+def get_data(full_data = True, features_to_drop = []):
     # Load data
     train_data = pd.read_csv("../data_processed/data.csv")
     test_data = pd.read_csv("../data_processed/test.csv")
@@ -35,14 +35,6 @@ def get_data(oneHotEncoding = True, full_data = True, features_to_drop = []):
 
     #OneHotEncoding for categorical columns except for label column
     input_data = data.loc[:, data.columns != 'class']
-    if oneHotEncoding:
-        categorical_columns = [input_data.columns[i] for i in range(len(input_data.columns)) if
-                               input_data.dtypes[i] == "object"]
-        transformer = make_column_transformer((OneHotEncoder(sparse_output=False), categorical_columns),
-                                              remainder="passthrough")
-        transformed = transformer.fit_transform(input_data)
-        input_data = pd.DataFrame(transformed, columns=transformer.get_feature_names_out())
-        input_data = input_data.rename(columns={"remainder__train":"train"})
 
     # recreate train and test input sets
     #input_data.drop("remainder__fnlwgt", axis=1, inplace=True)

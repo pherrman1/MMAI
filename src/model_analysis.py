@@ -1,6 +1,5 @@
-
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import precision_score, accuracy_score
+from sklearn.metrics import precision_score, accuracy_score, f1_score, confusion_matrix
 from sklearn.base import BaseEstimator
 import pickle
 import pandas as pd
@@ -11,26 +10,29 @@ import data_preprocessing as dp
 
 model_path = "../models/" + "2022_12_28_13_32_58_RandomForestClassifier"
 model_path = "../models/" + "2023_01_09_15_00_37_LinearSVC"
-#model_path = "../models/" + "2023_01_09_17_07_49_LinearSVC"
+# model_path = "../models/" + "2023_01_09_17_07_49_LinearSVC"
 
-model_path =  "../models/" + "2023_01_03_15_10_11_GradientBoostingClassifier"
+#model_path = "../models/" + "2023_01_20_16_53_31_GradientBoostingClassifier"
+model_path = "../models/" + "2023_01_20_18_29_36_LGBMClassifier"
 
 # load model and datasets
-with open(model_path + "/input_data.pickle", "rb") as file:
-    input_data = pickle.load(file)
 with open(model_path + "/model", "rb") as file:
     clf = pickle.load(file)
 
-print(input_data)
-
+print(clf.feature_names_in_)
 train_input, train_labels, test_input, test_labels, fnlwgt, data = dp.get_data()
 
-
-
 pred_labels = clf.best_estimator_.predict(test_input)
-print(accuracy_score(test_labels,pred_labels))
-print(clf.best_params_)
 
+print(pred_labels)
+print(confusion_matrix(test_labels, pred_labels, normalize="all"))
+print(clf.best_params_)
+final_score = clf.score(test_input, test_labels)
+print(final_score)
+
+week = (data[data["hours-per-week"]>80])
+print(week.to_string())
+print(sum(week)/len(week))
 """
 # print(len(test_labels[test_labels == 1]) / len(test_labels))
 
