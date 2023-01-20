@@ -145,7 +145,7 @@ if classifier == "LGBM":
               "random_state": [0],
               "num_leaves":[10,25,50,100,200],
               "n_jobs":[-1],
-              "is_unbalance":[True,False]}
+              "scale_pos_weight":[0.5,1,2]}
 
     clf = LGBMClassifier()
     grid_clf = grid_fit(clf, params, train_input, train_labels)
