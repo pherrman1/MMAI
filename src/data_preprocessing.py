@@ -6,7 +6,6 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import make_column_transformer
 
 
-
 def get_data(full_data = True, features_to_drop = []):
     # Load data
     train_data = pd.read_csv("../data_processed/data.csv")
@@ -25,19 +24,22 @@ def get_data(full_data = True, features_to_drop = []):
     train_data["train"] = 1
     test_data["train"] = 0
     data = pd.concat([train_data, test_data], ignore_index=True)
+    categorical_features = ["workclass", "marital-status", "occupation", "relationship", "race", "sex", "native-country"]
+    # Since LGBM supports string categorical features
+    for feature in categorical_features:
+        data[feature] = data[feature].astype("category")
+
 
     #Drop "education", since we have "education-num"
     data.drop("education", axis=1, inplace=True)
+    #data.drop("fnlwgt", axis=1, inplace=True)
 
     #Drop certain features in features_to_drop
     if not full_data:
         data.drop(features_to_drop, axis=1, inplace=True)
 
-    #OneHotEncoding for categorical columns except for label column
-    input_data = data.loc[:, data.columns != 'class']
-
     # recreate train and test input sets
-    #input_data.drop("remainder__fnlwgt", axis=1, inplace=True)
+    input_data = data.loc[:, data.columns != 'class']
     train_input = input_data[input_data["train"] == 1]
     test_input = input_data[input_data["train"] == 0]
     train_input = train_input.drop("train", axis=1)

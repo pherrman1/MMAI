@@ -13,34 +13,42 @@ model_path = "../models/" + "2023_01_09_15_00_37_LinearSVC"
 # model_path = "../models/" + "2023_01_09_17_07_49_LinearSVC"
 
 #model_path = "../models/" + "2023_01_20_16_53_31_GradientBoostingClassifier"
-model_path = "../models/" + "2023_01_20_18_29_36_LGBMClassifier"
+model_path = "../models/" + "2023_01_20_16_43_21_LGBMClassifier"
+#model_path = "../models/" + "2023_01_20_18_54_24_LinearSVC"
+models = []
+#models.append("../models/" + "2023_01_23_01_56_14_LinearSVC")
+models.append("../models/" + "2023_01_23_00_27_31_LGBMClassifier")
+#models.append("../models/" + "2023_01_22_23_47_08_RandomForestClassifier")
+for model_path in models:
+    # load model and datasets
+    with open(model_path + "/model", "rb") as file:
+        clf = pickle.load(file)
+    print(model_path)
+    train_input, train_labels, test_input, test_labels, fnlwgt, data = dp.get_data()
 
-# load model and datasets
-with open(model_path + "/model", "rb") as file:
-    clf = pickle.load(file)
+    print(clf.best_params_)
+    pred_labels = clf.best_estimator_.predict(test_input)
+    print(accuracy_score(test_labels,pred_labels))
+    print(precision_score(test_labels, pred_labels))
+    print(f1_score(test_labels, pred_labels))
 
-print(clf.feature_names_in_)
-train_input, train_labels, test_input, test_labels, fnlwgt, data = dp.get_data()
-
-pred_labels = clf.best_estimator_.predict(test_input)
-
+"""
 print(pred_labels)
 print(confusion_matrix(test_labels, pred_labels, normalize="all"))
 print(clf.best_params_)
 final_score = clf.score(test_input, test_labels)
 print(final_score)
 
+
 week = (data[data["hours-per-week"]>80])
 print(week.to_string())
 print(sum(week)/len(week))
-"""
+
 # print(len(test_labels[test_labels == 1]) / len(test_labels))
 
 # continuous features
 cont_features = [i for i in train_input.columns if i.__contains__("remainder")]
 #cont_features.remove('remainder__capital-gain') #this is somehow not working
-
-
 
 #plot_feature_dependence_continuous("remainder__capital-gain")
 
