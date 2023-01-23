@@ -36,7 +36,7 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, HistGra
 
 # classifier to train
 for classifier in ["LGBM",
-                   "RandomForest","SVM"
+                   #"RandomForest","SVM"
                    ]:
 
     # transformations
@@ -73,12 +73,12 @@ for classifier in ["LGBM",
         # Maybe change class weight to none
         clf_params = {"criterion": ["log_loss", "gini"], "max_depth": [None, 5, 8, 10, 15],
                       "n_estimators": [50, 100, 200, 500],
-                      "class_weight": [None, "balanced"], "max_features": ["sqrt", "log2", 10,20],
+                      "class_weight": [None, "balanced"], "max_features": ["sqrt", "log2", 10, 20],
                       "random_state": [0]}
 
         scoring = "balanced_accuracy"
         transform_params = [{"Nystroem": ["passthrough"],
-                             "PCA": ["passthrough", PCA(3), PCA(6), PCA(9)],
+                             "PCA": ["passthrough", PCA(10), PCA(30), PCA(50)],
                              "KernelPCA": ["passthrough"],
                              }]
 
@@ -104,12 +104,11 @@ for classifier in ["LGBM",
             "scale_pos_weight": [0.5, 1, 2, 4],
         }
         scoring = "balanced_accuracy"
-        transform_params = [
-            {"Nystroem": ["passthrough"],
-             "PCA": ["passthrough", PCA(3), PCA(6), PCA(9)],
-             "KernelPCA": ["passthrough"],
-             }]
-
+        transform_params = [{"Nystroem": ["passthrough"],
+                             "PCA": ["passthrough", PCA(10), PCA(30), PCA(50), PCA(80)],
+                             "KernelPCA": ["passthrough"],
+                             }]
+        clf_params = best_params
     if classifier == "SVM":
         # best_params for "2023_01_09_15_00_37_LinearSVC"
         best_params = {'C': [0.1], 'dual': [False], "class_weight": [None, "balanced"], 'loss': ['squared_hinge'],
@@ -151,7 +150,7 @@ for classifier in ["LGBM",
     print("Start GridSearch")
     # grid_search = HalvingGridSearchCV(pipe, param_grid=param_grid, n_jobs=-1, verbose=1,
     #                           scoring=scoring, min_resources=180)
-    grid_search = GridSearchCV(pipe, param_grid=param_grid, n_jobs=-1, verbose=0, scoring=scoring)
+    grid_search = GridSearchCV(pipe, param_grid=param_grid, n_jobs=-1, verbose=5, scoring=scoring)
     print("Start fitting")
     grid_search.fit(train_input, train_labels)
     print(pipe["preprocessor"].transformers)

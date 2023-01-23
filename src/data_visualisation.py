@@ -1,5 +1,6 @@
 import seaborn as sns
 import pandas as pd
+import sklearn
 from bokeh.plotting import figure, output_notebook, show
 from bokeh.transform import factor_cmap, linear_cmap
 from bokeh.models import ColumnDataSource, ColorBar, LinearColorMapper, CategoricalColorMapper
@@ -9,6 +10,7 @@ from math import pi
 from bokeh.io import export_png
 from sklearn.compose import ColumnTransformer
 from sklearn.kernel_approximation import Nystroem
+from sklearn.metrics import accuracy_score, class_likelihood_ratios, f1_score, balanced_accuracy_score, recall_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, normalize
 from sklearn.neighbors import KernelDensity
@@ -185,10 +187,10 @@ def plot_feature(feature, model_name):
     clf.predict_proba = clf.predict
 
     models_new = []
-    models_new.append("../models/" + "2023_01_23_02_48_17_LGBMClassifier")
     models_new.append("../models/" + "2023_01_23_06_19_00_LinearSVC")
+    models_new.append("../models/" + "2023_01_23_02_48_17_LGBMClassifier")
 
-    colors = ["rebeccapurple", "darkcyan"]
+    colors = ["darkcyan","rebeccapurple"]
     for k, model_path_new in enumerate(models_new):
         if "LGBM" in model_path_new or "Gradient" in model_path_new:
             model_name_new = "Gradient Boost"
@@ -281,15 +283,15 @@ def plot_feature_importance(models):
         with open(model_path + "/model", "rb") as file:
             clf = pickle.load(file)
 
-        result = permutation_importance(clf, test_input, test_labels, n_repeats=1, random_state=0, n_jobs=-1)
+        result = permutation_importance(clf, test_input, test_labels, n_repeats=1, random_state=0, n_jobs=-1,scoring="balanced_accuracy")
         importances = pd.Series(result.importances_mean, index=train_input.columns)
         df[model_name] = importances
 
-    df.plot.bar(ax=ax, color=["rebeccapurple", "darkcyan"], alpha=0.8, edgecolor="xkcd:almost black", linewidth=1)
+    df.plot.bar(ax=ax, color=["darkcyan","rebeccapurple"], alpha=0.8, edgecolor="xkcd:almost black", linewidth=1)
     ax.grid(axis="y", linestyle="dashed", color="gray")
     ax.set_axisbelow(True)
     ax.set_xticks(np.arange(len(train_input.columns)))
-    ax.set_ylabel("Mean accuracy decrease")
+    ax.set_ylabel("Mean balanced accuracy decrease")
     tick_labels = [str(col).title() for col in train_input.columns]
     ax.set_xticklabels(tick_labels, rotation=60, ha="right", fontsize=7)
     plt.savefig(f"../graphics/feature_importances_combined.pdf")
@@ -332,6 +334,7 @@ def plot_race_education():
 
         bottom = final_percentages[i, :] + bottom
 
+    handles.reverse()
     bar_legend = ax.legend(handles=handles, loc="upper left", title="Education/Degree",
                            facecolor="whitesmoke",
                            edgecolor="xkcd:almost black", handlelength=3, handleheight=1.5, title_fontsize="small",
@@ -342,11 +345,14 @@ def plot_race_education():
     ax.set_facecolor("snow")
     ax.set_axisbelow(True)
     ax.set_ylabel("Percent")
+    ax.set_yticks(np.linspace(0,1,6))
+    ax.set_yticklabels([0,20,40,60,80,100])
     ax.set_xlabel("Race/Ethnicity")
 
     ax.set_xticks(range(6))
     ax.set_xticklabels(["All", "White", "Black", "Asian", "Native", "Other"])
     plt.savefig(f"../graphics/race_education.pdf")
+
 
 
 def plot_classes():
@@ -366,10 +372,45 @@ def plot_classes():
     ax.set_axisbelow(True)
     plt.savefig(f"../graphics/classes.pdf")
 
+def plot_metrics(models):
+    fig, ax = plt.subplots()
+    fig.tight_layout(rect=[0.05, 0.04, 0.95, 0.96])
+    fig.patch.set_facecolor("whitesmoke")
+    ax.set_facecolor("snow")
+    #ax.set_xlabel("Scoring metric")
+    ax.set_ylim(0, 1)
+    df = pd.DataFrame()
+    for i, model_path in enumerate(models):
+        if "LGBM" in model_path or "Gradient" in model_path:
+            model_name = "Gradient Boost"
+        if "LinearSVC" in model_path:
+            model_name = "Linear SVC"
+        if "RandomForest" in model_path:
+            model_name = "Random Forest"
+        with open(model_path + "/model", "rb") as file:
+            clf = pickle.load(file)
+        scores = []
+        pred_labels = clf.best_estimator_.predict(test_input)
+        scores.append(balanced_accuracy_score(test_labels, pred_labels))
+        scores.append(accuracy_score(test_labels, pred_labels))
+        scores.append(recall_score(test_labels, pred_labels))
+
+        scores_ds = pd.Series(scores)
+        df[model_name] = scores_ds
+    print(df)
+    df.plot.bar(ax=ax, color=["darkcyan","royalblue","rebeccapurple",], alpha=0.8, edgecolor="xkcd:almost black", linewidth=1)
+    ax.grid(axis="y", linestyle="dashed", color="gray")
+    ax.set_axisbelow(True)
+    #ax.set_xticks(range(3))
+    ax.set_ylabel("Score")
+    tick_labels = ["Balanced accuracy","Accuracy","Recall"]
+    ax.set_xticklabels(tick_labels, ha="center", fontsize=10,rotation = 0)
+    plt.savefig(f"../graphics/metrics_combined.pdf")
 
 if __name__ == "__main__":
     train_input, train_labels, test_input, test_labels, fnlwgt, data = dp.get_data()
-    # plot_race_education()
+    plot_race_education()
+    """
     # plot_classes()
     features = [
         "race",
@@ -377,10 +418,11 @@ if __name__ == "__main__":
         "marital-status"
     ]
     models = []
-    # models.append("../models/" + "2023_01_23_06_14_16_RandomForestClassifier")
-    models.append("../models/" + "2023_01_23_02_48_17_LGBMClassifier")
     models.append("../models/" + "2023_01_23_06_19_00_LinearSVC")
-    plot_feature_importance(models)
+    #models.append("../models/" + "2023_01_23_06_14_16_RandomForestClassifier")
+    models.append("../models/" + "2023_01_23_02_48_17_LGBMClassifier")
+    #plot_feature_importance(models)
+    plot_metrics(models)
     for model_path in models:
         if "LGBM" in model_path or "Gradient" in model_path:
             model_name = "Gradient Boost"
@@ -399,4 +441,4 @@ if __name__ == "__main__":
 
         # sns_plot = sns.pairplot(data, hue="class",diag_kind="hist")
         # sns_plot.map_lower(sns.kdeplot, levels=4, color=".2")
-        # sns_plot.savefig("data_plot.png")
+        # sns_plot.savefig("data_plot.png")"""

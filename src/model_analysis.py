@@ -1,3 +1,4 @@
+from sklearn.model_selection import LearningCurveDisplay, learning_curve
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import precision_score, accuracy_score, f1_score, confusion_matrix
 from sklearn.base import BaseEstimator
@@ -6,6 +7,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import UnivariateSpline
+from sklearn.svm import LinearSVC
+from sklearn.model_selection import validation_curve
+
 import data_preprocessing as dp
 
 model_path = "../models/" + "2022_12_28_13_32_58_RandomForestClassifier"
@@ -14,9 +18,9 @@ model_path = "../models/" + "2023_01_09_15_00_37_LinearSVC"
 
 
 models = []
-models.append("../models/" + "2023_01_23_06_14_16_RandomForestClassifier")
+# models.append("../models/" + "2023_01_23_06_14_16_RandomForestClassifier")
 models.append("../models/" + "2023_01_23_02_48_17_LGBMClassifier")
-models.append("../models/" + "2023_01_23_06_19_00_LinearSVC")
+#models.append("../models/" + "2023_01_23_06_19_00_LinearSVC")
 
 for model_path in models:
     # load model and datasets
@@ -24,14 +28,44 @@ for model_path in models:
         clf = pickle.load(file)
     print(model_path)
     train_input, train_labels, test_input, test_labels, fnlwgt, data = dp.get_data()
+    param_range = np.arange(-1, 100, 1)
+    train_scores, test_scores = validation_curve(clf.best_estimator_, train_input, train_labels, param_name="LGBM__max_depth",
+                                                 param_range=param_range, verbose=5, n_jobs=-1,
+                                                 scoring="balanced_accuracy")
+    train_scores_mean = np.mean(train_scores, axis=1)
+    train_scores_std = np.std(train_scores, axis=1)
+    test_scores_mean = np.mean(test_scores, axis=1)
+    test_scores_std = np.std(test_scores, axis=1)
 
-    #print(clf.best_params_)
-    pred_labels = clf.best_estimator_.predict(test_input)
-    print(clf.best_score_)
-    print(accuracy_score(test_labels,pred_labels))
-    print(precision_score(test_labels, pred_labels))
-    print(f1_score(test_labels, pred_labels))
-
+    plt.title("Validation Curve with SVC")
+    plt.xlabel("C")
+    plt.ylabel("Score")
+    plt.ylim(0.0, 1.1)
+    lw = 2
+    plt.semilogx(
+        param_range, train_scores_mean, label="Training score", color="darkorange", lw=lw
+    )
+    plt.fill_between(
+        param_range,
+        train_scores_mean - train_scores_std,
+        train_scores_mean + train_scores_std,
+        alpha=0.2,
+        color="darkorange",
+        lw=lw,
+    )
+    plt.semilogx(
+        param_range, test_scores_mean, label="Cross-validation score", color="navy", lw=lw
+    )
+    plt.fill_between(
+        param_range,
+        test_scores_mean - test_scores_std,
+        test_scores_mean + test_scores_std,
+        alpha=0.2,
+        color="navy",
+        lw=lw,
+    )
+    plt.legend(loc="best")
+    plt.show()
 """
 print(pred_labels)
 print(confusion_matrix(test_labels, pred_labels, normalize="all"))
