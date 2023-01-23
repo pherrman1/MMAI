@@ -12,13 +12,12 @@ model_path = "../models/" + "2022_12_28_13_32_58_RandomForestClassifier"
 model_path = "../models/" + "2023_01_09_15_00_37_LinearSVC"
 # model_path = "../models/" + "2023_01_09_17_07_49_LinearSVC"
 
-#model_path = "../models/" + "2023_01_20_16_53_31_GradientBoostingClassifier"
-model_path = "../models/" + "2023_01_20_16_43_21_LGBMClassifier"
-#model_path = "../models/" + "2023_01_20_18_54_24_LinearSVC"
+
 models = []
-#models.append("../models/" + "2023_01_23_01_56_14_LinearSVC")
-models.append("../models/" + "2023_01_23_00_27_31_LGBMClassifier")
-#models.append("../models/" + "2023_01_22_23_47_08_RandomForestClassifier")
+models.append("../models/" + "2023_01_23_06_14_16_RandomForestClassifier")
+models.append("../models/" + "2023_01_23_02_48_17_LGBMClassifier")
+models.append("../models/" + "2023_01_23_06_19_00_LinearSVC")
+
 for model_path in models:
     # load model and datasets
     with open(model_path + "/model", "rb") as file:
@@ -26,8 +25,9 @@ for model_path in models:
     print(model_path)
     train_input, train_labels, test_input, test_labels, fnlwgt, data = dp.get_data()
 
-    print(clf.best_params_)
+    #print(clf.best_params_)
     pred_labels = clf.best_estimator_.predict(test_input)
+    print(clf.best_score_)
     print(accuracy_score(test_labels,pred_labels))
     print(precision_score(test_labels, pred_labels))
     print(f1_score(test_labels, pred_labels))

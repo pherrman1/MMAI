@@ -81,22 +81,24 @@ def plot_feature(feature, model_name):
                     "hours-per-week": [np.linspace(0, 100, 20), 25000, np.linspace(0, 100, 11)],
                     "race": [None, 50000, np.arange(5)],
                     "capital-gain": [np.arange(0, 100000, 10000), 50000,
-                                     np.arange(0, 100000, 10000)]
+                                     np.arange(0, 100000, 10000)],
+                    "marital-status": [np.arange(7), 40000,
+                                       np.arange(7)]
                     }
 
-    if feature == "race" or feature == "occupation":
+    if feature == "race" or feature == "marital-status":
         sorting_index = data[feature].value_counts().index
-        bin_entries = ax.bar(x=sorting_index, height=data[feature].value_counts().reindex(index=sorting_index),
-                             label=feature_name,
-                             align="center", width=0.8,
-                             color="xkcd:light brown", alpha=0.9,
-                             edgecolor="dimgrey", linewidth=1.5)
+        barlist = ax.bar(x=sorting_index, height=data[feature].value_counts().reindex(index=sorting_index),
+                         label=feature_name,
+                         align="center", width=0.8,
+                         color="grey", alpha=0.9,
+                         edgecolor="xkcd:almost black", linewidth=1)
 
     else:
-        bin_entries, hist_bins, patches = ax.hist(data[feature], bins=feature_dict[feature][0], label=feature_name,
+        bin_entries, hist_bins, barlist = ax.hist(data[feature], bins=feature_dict[feature][0], label=feature_name,
                                                   align="mid", rwidth=0.8,
-                                                  color="xkcd:light brown", alpha=0.9,
-                                                  edgecolor="dimgrey", linewidth=1.5)
+                                                  color="grey", alpha=0.9,
+                                                  edgecolor="xkcd:almost black", linewidth=1)
 
     fig.patch.set_facecolor("whitesmoke")
     ax.set_facecolor("snow")
@@ -114,54 +116,65 @@ def plot_feature(feature, model_name):
         ax.set_xticklabels(x_tick_educ, rotation=60, ha="right")
     if feature == "race":
         ax.set_xticklabels(["White", "Black", "Asian", "Native", "Other"])
-    if feature == "occupation":
+    if feature == "marital-status":
         ax.set_xticklabels(data[feature].value_counts().index, rotation=60, ha="right", fontsize=7)
 
     plt.savefig(f"../graphics/{feature}_plot.pdf")
 
     # classes
     all_labels = pd.concat([train_labels, test_labels], ignore_index=True)
-    if feature == "race" or feature == "occupation":
+    if feature == "race" or feature == "marital-status":
         ax.bar(x=sorting_index,
                height=data[feature][all_labels == 1].value_counts().reindex(index=sorting_index),
                label="Income > 50k",
                align="center", width=0.8,
                color="xkcd:navy green", alpha=0.9,
-               edgecolor="dimgrey", linewidth=1.5)
+               edgecolor="xkcd:almost black", linewidth=1)
+
     else:
         ax.hist(data[feature][all_labels == 1], bins=feature_dict[feature][0], label="Income > 50k", align="mid",
-                rwidth=0.8, color="xkcd:navy green", alpha=0.7, edgecolor="dimgrey", linewidth=1.5)
+                rwidth=0.8, color="xkcd:navy green", alpha=0.9, edgecolor="xkcd:almost black", linewidth=1)
+
+    for bar in barlist:
+        bar.set_color("xkcd:light brown")
+        bar.set_edgecolor("black")
+        bar.set_linewidth(1)
 
     bar_legend = ax.legend(["$\leq$50k\$ p.a.", " $>$50k\$ p.a."], loc="upper left", title="Income class",
                            facecolor="whitesmoke",
-                           edgecolor="black", handlelength=3, handleheight=1.5, title_fontsize="small")
+                           edgecolor="xkcd:almost black", handlelength=3, handleheight=1.5, title_fontsize="small")
+
     plt.savefig(f"../graphics/{feature}_classes_plot.pdf")
 
     # probability
     ax2 = plt.twinx()
     ax2.set_ylabel('Probability')
     if feature == "education-num":
-        ax2.set_yticks(np.linspace(0, 1, 9))
+        ax2.set_yticks(np.linspace(0, 1, 5))
+        # ax2.set_yticklabels(np.linspace(0, 1, 5))
+    if feature == "marital-status":
+        ax2.set_yticks(np.linspace(0, 1, 5))
+        # ax2.set_yticklabels(np.linspace(0, 1, 5))
     ax2.set_ylim(0, 1)
 
     values = train_input[feature].value_counts()
     values_class_1 = train_input[feature][train_labels == 1].value_counts()
 
-    if feature == "race" or feature == "occupation":
+    if feature == "race" or feature == "marital-status":
         probabilities = values_class_1 / values
-        prob_line = ax2.scatter(x=sorting_index, y=probabilities.reindex(index=sorting_index), c="royalblue", s=10,
+        prob_line = ax2.scatter(x=sorting_index, y=probabilities.reindex(index=sorting_index), c="firebrick", s=10,
                                 label="Real probability", marker="8")
     else:
         values = values.sort_index(ascending=True)
         values_class_1 = values_class_1.sort_index(ascending=True)
         probabilities = values_class_1 / values
         probabilities = probabilities.interpolate(method="linear")
-        prob_line, = ax2.plot(probabilities.index, probabilities.values, "royalblue",
+        prob_line, = ax2.plot(probabilities.index, probabilities.values, "firebrick",
                               label="Real probability")
 
     handles = [prob_line]
     ax2.legend(handles=handles, loc="upper right", facecolor="whitesmoke",
-               edgecolor="black", handlelength=2.6, handleheight=1.5)
+               edgecolor="xkcd:almost black", handlelength=2.6, handleheight=1.5)
 
     plt.savefig(f"../graphics/{feature}_classes_probability_plot.pdf")
 
@@ -170,25 +183,39 @@ def plot_feature(feature, model_name):
     unique_values.sort()
 
     clf.predict_proba = clf.predict
-    print("calc partial_dependence")
-    results = partial_dependence(clf, train_input, [feature],
-                                 # categorical_features=["workclass", "marital-status", "occupation", "relationship",
-                                 #                      "race", "sex", "native-country"],
-                                 grid_resolution=200,
-                                 response_method="predict_proba")
 
-    # feature dependence
-    if feature == "race" or feature == "occupation":
-        pred_line = ax2.scatter(x=results["values"][0], y=results["average"][0], c="firebrick", marker="8", s=10,
-                                label=f"Learned dependence \nof {model_name}")
-    else:
-        pred_line, = ax2.plot(results["values"][0], results["average"][0], "firebrick",
-                              label=f"Learned dependence \nof {model_name}")
-    handles = [prob_line, pred_line]
-    ax2.legend(handles=handles, loc="upper right", facecolor="whitesmoke",
-               edgecolor="black", handlelength=2.6, handleheight=1.5)
+    models_new = []
+    models_new.append("../models/" + "2023_01_23_02_48_17_LGBMClassifier")
+    models_new.append("../models/" + "2023_01_23_06_19_00_LinearSVC")
 
-    plt.savefig(f"../graphics/{feature}_{model_name}_feature_dependence.pdf")
+    colors = ["rebeccapurple", "darkcyan"]
+    for k, model_path_new in enumerate(models_new):
+        if "LGBM" in model_path_new or "Gradient" in model_path_new:
+            model_name_new = "Gradient Boost"
+        if "LinearSVC" in model_path_new:
+            model_name_new = "Linear SVC"
+        if "RandomForest" in model_path_new:
+            model_name_new = "Random Forest"
+        with open(model_path_new + "/model", "rb") as file:
+            clf_new = pickle.load(file)
+        clf_new.predict_proba = clf_new.predict
+        results = partial_dependence(clf_new, train_input, [feature],
+                                     grid_resolution=200,
+                                     response_method="predict_proba")
+
+        # feature dependence
+        if feature == "race" or feature == "marital-status":
+            pred_line = ax2.scatter(x=results["values"][0], y=results["average"][0], c=colors[k], marker="8", s=10,
+                                    label=f"Learned dependence \nof {model_name_new}")
+        else:
+            pred_line, = ax2.plot(results["values"][0], results["average"][0], colors[k],
+                                  label=f"Learned dependence \nof {model_name_new}")
+
+        handles = handles + [pred_line]
+        ax2.legend(handles=handles, loc="upper right", facecolor="whitesmoke",
+                   edgecolor="xkcd:almost black", handlelength=2.6, handleheight=1.5)
+
+        plt.savefig(f"../graphics/{feature}_{model_name_new}_feature_dependence.pdf")
 
 
 def plot_PCA(train_input):
@@ -235,29 +262,126 @@ def plot_PCA(train_input):
     plt.savefig(f"../graphics/pca.png")
 
 
-def plot_feature_importance(model_name):
-    result = permutation_importance(clf, test_input, test_labels, n_repeats=1, random_state=0, n_jobs=-1)
-
-    forest_importances = pd.Series(result.importances_mean, index=train_input.columns)
-
-    # use all onehotencoder features
+def plot_feature_importance(models):
     fig, ax = plt.subplots()
-    forest_importances.plot.bar(yerr=result.importances_std, ax=ax)
+    fig.tight_layout(rect=[0.05, 0.15, 0.95, 0.95])
+    fig.patch.set_facecolor("whitesmoke")
+    ax.set_facecolor("snow")
+
+    ax.set_xlabel("Features")
+    ax.set_ylim(-0.003, 0.1)
+    df = pd.DataFrame()
+    for i, model_path in enumerate(models):
+        if "LGBM" in model_path or "Gradient" in model_path:
+            model_name = "Gradient Boost"
+        if "LinearSVC" in model_path:
+            model_name = "Linear SVC"
+        if "RandomForest" in model_path:
+            model_name = "Random Forest"
+        with open(model_path + "/model", "rb") as file:
+            clf = pickle.load(file)
+
+        result = permutation_importance(clf, test_input, test_labels, n_repeats=1, random_state=0, n_jobs=-1)
+        importances = pd.Series(result.importances_mean, index=train_input.columns)
+        df[model_name] = importances
+
+    df.plot.bar(ax=ax, color=["rebeccapurple", "darkcyan"], alpha=0.8, edgecolor="xkcd:almost black", linewidth=1)
+    ax.grid(axis="y", linestyle="dashed", color="gray")
+    ax.set_axisbelow(True)
+    ax.set_xticks(np.arange(len(train_input.columns)))
     ax.set_ylabel("Mean accuracy decrease")
-    plt.savefig(f"../graphics/{model_name}_feature_importance.png")
+    tick_labels = [str(col).title() for col in train_input.columns]
+    ax.set_xticklabels(tick_labels, rotation=60, ha="right", fontsize=7)
+    plt.savefig(f"../graphics/feature_importances_combined.pdf")
+
 
 def plot_race_education():
-    pass
+    fig, ax = plt.subplots()
+    fig.tight_layout(rect=[0.05, 0.05, .78, 0.95])
+
+    bins = [[0, 8], [9, 9], [10, 10], [11, 12], [13, 16]]
+    final_percentages = np.zeros((5, 6))
+    value_counts = data['education-num'].value_counts(normalize=True)
+    for ind, it in value_counts.items():
+        for i, bin in enumerate(bins):
+            if ind >= bin[0] and ind <= bin[1]:
+                final_percentages[i][0] += it
+
+    for race_ind, race in enumerate(data["race"].unique()):
+        value_counts = data['education-num'][data["race"] == race].value_counts(normalize=True)
+        for ind, it in value_counts.items():
+            for i, bin in enumerate(bins):
+                if ind >= bin[0] and ind <= bin[1]:
+                    final_percentages[i][race_ind + 1] += it
+
+    cmap = mpl.colormaps["Set2"]
+    handles = []
+    bottom = np.zeros(6)
+    educ_labels = ["Less than \nhigh school", "High school only", "College only", "Associates Degree \n only",
+                   "Bachelor's or \nhigher degree"]
+    for i in range(5):
+        print(cmap(i))
+        this_handle = ax.bar(x=range(6), height=final_percentages[i, :], bottom=bottom, width=0.8, align="center",
+                             edgecolor="xkcd:almost black", linewidth=1, label=educ_labels[i], color=cmap(i))
+        handles.append(this_handle)
+
+        for j, rect in enumerate(this_handle):
+            height = rect.get_height()
+            ax.text(x=rect.get_x() + rect.get_width() / 2, y=-0.013 + bottom[j] + height / 2,
+                    s=str(int(round(final_percentages[i, j] * 100, 0))), ha="center")
+
+        bottom = final_percentages[i, :] + bottom
+
+    bar_legend = ax.legend(handles=handles, loc="upper left", title="Education/Degree",
+                           facecolor="whitesmoke",
+                           edgecolor="xkcd:almost black", handlelength=3, handleheight=1.5, title_fontsize="small",
+                           bbox_to_anchor=(1, 1.015),
+                           fontsize=8)
+
+    fig.patch.set_facecolor("whitesmoke")
+    ax.set_facecolor("snow")
+    ax.set_axisbelow(True)
+    ax.set_ylabel("Percent")
+    ax.set_xlabel("Race/Ethnicity")
+
+    ax.set_xticks(range(6))
+    ax.set_xticklabels(["All", "White", "Black", "Asian", "Native", "Other"])
+    plt.savefig(f"../graphics/race_education.pdf")
+
+
+def plot_classes():
+    fig, ax = plt.subplots()
+    fig.tight_layout(rect=[0.05, 0.05, 0.95, 0.85])
+    labels = ["Yearly Income of $\leq$50k\$", "Yearly Income of $>$50k\$"]
+    label_count = data["class"].value_counts()
+    ax.pie(label_count.values, explode=(0, 0.3), labels=labels, colors=["xkcd:light brown", "xkcd:navy green"],
+           autopct='%1.1f%%', wedgeprops={'linewidth': 2, "edgecolor": "xkcd:almost black", "alpha": 0.9},
+           startangle=135,
+           labeldistance=1.2,
+           textprops=dict(va='center', ha='center', fontsize=12, style="oblique"))
+
+    ax.set_aspect("equal")
+    fig.patch.set_facecolor("whitesmoke")
+    ax.set_facecolor("snow")
+    ax.set_axisbelow(True)
+    plt.savefig(f"../graphics/classes.pdf")
+
 
 if __name__ == "__main__":
     train_input, train_labels, test_input, test_labels, fnlwgt, data = dp.get_data()
-    features = ["occupation","age","education-num","race"]
+    # plot_race_education()
+    # plot_classes()
+    features = [
+        "race",
+        "age", "education-num",
+        "marital-status"
+    ]
     models = []
-    models.append("../models/" + "2023_01_23_01_56_14_LinearSVC")
-    models.append("../models/" + "2023_01_23_00_27_31_LGBMClassifier")
-    models.append("../models/" + "2023_01_22_23_47_08_RandomForestClassifier")
+    # models.append("../models/" + "2023_01_23_06_14_16_RandomForestClassifier")
+    models.append("../models/" + "2023_01_23_02_48_17_LGBMClassifier")
+    models.append("../models/" + "2023_01_23_06_19_00_LinearSVC")
+    plot_feature_importance(models)
     for model_path in models:
-        print(model_name)
         if "LGBM" in model_path or "Gradient" in model_path:
             model_name = "Gradient Boost"
         if "LinearSVC" in model_path:
@@ -267,8 +391,6 @@ if __name__ == "__main__":
         print(model_name)
         with open(model_path + "/model", "rb") as file:
             clf = pickle.load(file)
-
-        plot_feature_importance(model_name)
 
         for feature in features:
             print(feature)

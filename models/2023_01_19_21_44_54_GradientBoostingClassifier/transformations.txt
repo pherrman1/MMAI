@@ -1,4 +1,0 @@
-standard_transform: True
-nystroem_transformation: False
-pca_transformation: False
-kernel_pca_transformation: False

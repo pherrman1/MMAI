@@ -1,4 +1,0 @@
-Nystroem: ['passthrough']
-PCA: ['passthrough']
-KernelPCA: ['passthrough']
-['balanced_accuracy', 'f1', 'roc_auc']: 0.6403693931398416

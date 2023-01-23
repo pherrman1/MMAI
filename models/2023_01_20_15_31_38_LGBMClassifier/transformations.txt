@@ -1,5 +1,0 @@
-StandardScaler: ['passthrough']
-Nystroem: ['passthrough']
-PCA: ['passthrough']
-KernelPCA: ['passthrough']
-precision
